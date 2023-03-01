@@ -1,4 +1,7 @@
 // See https://kit.svelte.dev/docs/types#app
+
+import type { i18n, InitOptions } from 'i18next';
+
 // for information about these interfaces
 declare global {
   namespace App {
@@ -6,6 +9,9 @@ declare global {
     // interface Locals {}
     // interface PageData {}
     // interface Platform {}
+    interface Locals {
+      i18n: i18n & { initOptions: Partial<InitOptions> };
+    }
   }
 }
 
