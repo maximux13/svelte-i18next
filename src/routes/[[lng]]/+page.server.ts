@@ -3,7 +3,5 @@ import type { PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ locals, depends }) => {
   depends('i18n:lng');
 
-  return { title: locals.i18n.t('key'), ns: ['test'] };
+  return { title: locals.i18n.t('key') };
 };
-
-export const _ns = ['test'];

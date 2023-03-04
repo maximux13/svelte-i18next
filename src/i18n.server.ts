@@ -9,7 +9,10 @@ const i18next = new SvelteI18next({
     ...i18n,
     backend: { loadPath: '/locales/{{lng}}/{{ns}}.json' }
   },
-  backend: Backend
+  backend: Backend,
+  routes: {
+    '/[[lng]]': 'test'
+  }
 });
 
 export default i18next;

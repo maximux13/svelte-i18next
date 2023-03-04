@@ -6,33 +6,24 @@ import {
   type Namespace
 } from 'i18next';
 
-import { pick } from 'accept-language-parser';
-import { parseAcceptLanguage } from 'intl-parse-accept-language';
+import type { Cookies, ServerLoadEvent } from '@sveltejs/kit';
 
-import type { HttpBackendOptions } from 'i18next-http-backend';
-import type { Cookies, RequestEvent, ServerLoadEvent } from '@sveltejs/kit';
+import createFetchRequest from './request';
 
-export type LanguageDetectorOptions = {
-  cookie?: string;
-  param?: string;
-  order?: Array<'params' | 'cookie' | 'header'>;
-  supportedLngs?: InitOptions['supportedLngs'];
-  fallbackLng?: InitOptions['fallbackLng'];
-};
+import LanguageDetector, {
+  type LanguageDetectorOptions,
+  type Params,
+  type EventLike
+} from './detector';
 
 export type SvelteI18nextOptions = {
   i18next: InitOptions;
   backend?: NewableModule<BackendModule<unknown>>;
   detector?: LanguageDetectorOptions;
+  routes?: Record<string, Namespace>;
 };
 
 export type DetectOptions = { cookies: Cookies; params: Params; request: Request };
-
-type Params = Partial<Record<string, string>>;
-type EventLike = ServerLoadEvent | RequestEvent;
-
-export const DEFAULT_PARAM = 'lng';
-export const DEFAULT_COOKIE_NAME = 'i18next';
 
 export default class SvelteI18next {
   private detector: LanguageDetector;
@@ -52,30 +43,14 @@ export default class SvelteI18next {
 
     if (this.options.backend) instance = instance.use(this.options.backend);
 
+    const request = createFetchRequest(event.fetch);
+
     await instance.init({
       ...initOptions,
       backend: {
         ...initOptions.backend,
-        request(options, url, payload, callback) {
-          event
-            .fetch(url)
-            .then((response) => {
-              if (!response.ok)
-                return callback(response.statusText || 'Error', {
-                  status: response.status,
-                  data: ''
-                });
-
-              response
-                .text()
-                .then((data) => {
-                  callback(null, { status: response.status, data });
-                })
-                .catch((err) => callback(err, { status: 400, data: '' }));
-            })
-            .catch((err) => callback(err, { status: 400, data: '' }));
-        }
-      } as HttpBackendOptions
+        request
+      }
     });
 
     return instance;
@@ -118,24 +93,18 @@ export default class SvelteI18next {
     return this.detector.detect(event);
   }
 
-  public async getNamespaces(event: EventLike) {
-    const defaultNS = this.options.i18next.defaultNS;
+  public getNamespaces(event: EventLike) {
+    const defaultNS = this.options.i18next?.defaultNS || 'translation';
 
-    if (!event.route.id) return [defaultNS];
+    if (!event.route.id) return defaultNS as Namespace;
 
-    let ns = [];
+    let ns;
 
-    try {
-      const { _ns } = await import('../routes/' + event.route.id + '/+page.server.ts');
-
-      if (_ns) ns = Array.isArray(_ns) ? _ns : [_ns];
-    } catch {
-      //
+    if ((ns = this.options.routes?.[event.route.id])) {
+      return [...new Set([defaultNS].concat(ns))] as Namespace;
     }
 
-    if (Array.isArray(defaultNS)) return defaultNS.concat(ns);
-
-    return [defaultNS].concat(ns);
+    return defaultNS as Namespace;
   }
 
   public async getFixedT<N extends Namespace>(
@@ -155,74 +124,5 @@ export default class SvelteI18next {
     await instance.loadNamespaces(namespaces ?? 'translations');
 
     return instance.getFixedT(locale, namespaces);
-  }
-}
-
-class LanguageDetector {
-  constructor(private options: LanguageDetectorOptions) {}
-
-  public async detect(event: EventLike): Promise<string> {
-    const orders = this.options.order ?? (['params', 'cookie', 'header'] as const);
-
-    let locale: string | null = null;
-
-    for (const order of orders) {
-      if (order === 'params') {
-        locale = this.fromParams(event.params);
-      }
-
-      if (order === 'cookie') {
-        locale = this.fromCookie(event.cookies);
-      }
-
-      if (order === 'header') {
-        locale = this.fromHeader(event.request);
-      }
-
-      if (locale) return locale;
-    }
-
-    return this.options.fallbackLng as string;
-  }
-
-  private fromParams(params: Params) {
-    const param = params?.[this.options.param || DEFAULT_PARAM];
-    if (!param) return null;
-
-    return this.pick(param);
-  }
-
-  private fromCookie(cookies: Cookies) {
-    const cookie = cookies.get(this.options.cookie ?? DEFAULT_COOKIE_NAME);
-    if (!cookie) return null;
-
-    return this.pick(cookie);
-  }
-
-  private fromHeader(request: Request) {
-    const header = request.headers.get('Accept-Language');
-    if (!header) return null;
-
-    const locales = parseAcceptLanguage(header, {
-      validate: Intl.DateTimeFormat.supportedLocalesOf,
-      ignoreWildcard: true
-    });
-
-    return this.pick(locales.join(','));
-  }
-
-  private pick(lang: string | undefined) {
-    const supportedLngs = Array.isArray(this.options.supportedLngs)
-      ? this.options.supportedLngs
-      : [this.options.supportedLngs];
-
-    return (
-      pick(supportedLngs, lang ?? (this.options.fallbackLng as string), {
-        loose: false
-      }) ||
-      pick(supportedLngs, lang ?? (this.options.fallbackLng as string), {
-        loose: true
-      })
-    );
   }
 }

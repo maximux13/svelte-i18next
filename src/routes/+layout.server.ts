@@ -5,5 +5,3 @@ export const load: LayoutServerLoad = async ({ locals, depends }) => {
 
   return { i18n: locals.i18n.initOptions };
 };
-
-export const _ns = ['yolo'];

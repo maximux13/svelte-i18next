@@ -1,6 +1,6 @@
 // See https://kit.svelte.dev/docs/types#app
 
-import type { i18n, InitOptions } from 'i18next';
+import type { i18n, InitOptions, Namespace } from 'i18next';
 
 // for information about these interfaces
 declare global {
@@ -11,6 +11,7 @@ declare global {
     // interface Platform {}
     interface Locals {
       i18n: i18n & { initOptions: Partial<InitOptions> };
+      ns: Namespace;
     }
   }
 }
