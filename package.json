@@ -21,7 +21,7 @@
     "url": "https://github.com/maximux13/svelte-i18next/issues"
   },
   "homepage": "https://github.com/maximux13/svelte-i18next#readme",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "license": "MIT",
   "scripts": {
     "dev": "vite dev",
