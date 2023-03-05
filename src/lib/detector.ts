@@ -10,6 +10,15 @@ export type EventLike = ServerLoadEvent | RequestEvent;
 export const DEFAULT_PARAM = 'lng';
 export const DEFAULT_COOKIE_NAME = 'i18next';
 
+/**
+ * `LanguageDetectorOptions`
+
+ * @property {string} cookie - The name of the cookie to use for language detection.
+ * @property {string} param - The query parameter to look for. Defaults to 'lng'.
+ * @property order - An array of the order in which to check for the language.
+ * @property supportedLngs - An array of languages that are supported by the application.
+ * @property fallbackLng - The language to use if the language can't be detected.
+ */
 export type LanguageDetectorOptions = {
   cookie?: string;
   param?: string;
