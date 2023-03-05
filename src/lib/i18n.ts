@@ -3,10 +3,11 @@ import {
   type InitOptions,
   type NewableModule,
   type BackendModule,
-  type Namespace
+  type Namespace,
+  type i18n
 } from 'i18next';
 
-import type { Cookies, ServerLoadEvent } from '@sveltejs/kit';
+import type { Cookies } from '@sveltejs/kit';
 
 import createFetchRequest from './request';
 
@@ -56,37 +57,17 @@ export default class SvelteI18next {
     return instance;
   }
 
-  public async init(event: EventLike) {
-    const locals = event.locals;
-
-    const lng = await this.getLocale(event);
-    const ns = await this.getNamespaces(event);
-
-    const [instance] = await Promise.all([
-      this.createInstance(event as ServerLoadEvent, {
-        ...this.options.i18next,
-        lng,
-        fallbackLng: lng,
-        ns
-      })
-    ]);
-
-    await instance.changeLanguage(lng);
-
+  public getInitOptions(instance: i18n) {
     const resources = instance.store.data;
     const { backend, ...initOptions } = this.options.i18next;
 
-    locals.i18n = Object.assign(instance, {
-      initOptions: {
-        ...initOptions,
-        resources,
-        lng,
-        ns,
-        fallbackLng: lng
-      }
-    });
-
-    return locals.i18n;
+    return {
+      ...initOptions,
+      resources,
+      lng: instance.language,
+      ns: instance.options.ns,
+      fallbackLng: instance.language
+    };
   }
 
   public async getLocale(event: EventLike) {
@@ -108,7 +89,7 @@ export default class SvelteI18next {
   }
 
   public async getFixedT<N extends Namespace>(
-    event: ServerLoadEvent,
+    event: EventLike,
     locale: string,
     namespaces?: N,
     options?: InitOptions

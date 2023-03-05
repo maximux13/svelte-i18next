@@ -1,6 +1,6 @@
 import Backend from 'i18next-http-backend';
 
-import SvelteI18next from '$lib/i18n';
+import { SvelteI18next } from '@maximux13/svelte-i18next';
 
 import i18n from './i18n';
 

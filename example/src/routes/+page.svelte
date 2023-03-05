@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { i18nStore } from '$lib/store';
+  import type { i18nStore } from '@maximux13/svelte-i18next';
   import { getContext } from 'svelte';
 
   import { page } from '$app/stores';
@@ -8,16 +8,13 @@
 </script>
 
 <svelte:head>
-  <title>{$page.data.title}</title>
+  <title>{$i18n.t('title', { name: $page.data.world })}</title>
 </svelte:head>
 
-{$i18n.t('key')}
+<h1>Welcome to SvelteKit</h1>
+<p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
 
-{#if $i18n.language == 'es'}
-  {$i18n.t('test:other', { value: '1' })}
-{:else}
-  {$i18n.t('test:other', { value: '2' })}
-{/if}
+<pre>{$i18n.t('title', { name: $page.data.world })}</pre>
 
 <button on:click={() => $i18n.changeLanguage('es')}>ES</button>
 <button on:click={() => $i18n.changeLanguage('en')}>EN</button>

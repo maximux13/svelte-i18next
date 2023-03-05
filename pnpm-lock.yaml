@@ -1,6 +1,7 @@
 lockfileVersion: 5.4
 
 specifiers:
+  '@maximux13/svelte-i18next': ^0.0.1
   '@sveltejs/adapter-auto': ^2.0.0
   '@sveltejs/kit': ^1.9.3
   '@sveltejs/package': ^2.0.0
@@ -26,6 +27,7 @@ specifiers:
   vitest: ^0.25.3
 
 dependencies:
+  '@maximux13/svelte-i18next': 'link:'
   accept-language-parser: 1.5.0
   intl-parse-accept-language: 1.0.0
 

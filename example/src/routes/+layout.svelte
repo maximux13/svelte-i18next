@@ -4,7 +4,7 @@
   import Backend from 'i18next-http-backend';
   import LanguageDetector from 'i18next-browser-languagedetector';
 
-  import { createStore } from '$lib/store';
+  import { createStore } from '@maximux13/svelte-i18next';
 
   import type { LayoutData } from './$types';
 
