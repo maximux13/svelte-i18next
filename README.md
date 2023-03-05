@@ -1,58 +1,224 @@
-# create-svelte
+# Svelte.i18next
 
-Everything you need to build a Svelte library, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).
+![](https://img.shields.io/github/license/maximux13/svelte-i18next)
+![](https://img.shields.io/npm/dm/@maximux13/svelte-i18next)
+![](https://img.shields.io/npm/v/@maximux13/svelte-i18next)
 
-Read more about creating a library [in the docs](https://kit.svelte.dev/docs/packaging).
+## Introduction
 
-## Creating a project
+[Svelte.i18next](https://github.com/maximux13/svelte-i18next) is a library that makes it easy to add internationalization (i18n) support to your [SvelteKit](https://kit.svelte.dev/). It provides a simple interface for configuring [i18next](https://www.i18next.com/) and managing translations.
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Installation
 
-```bash
-# create a new project in the current directory
-npm create svelte@latest
-
-# create a new project in my-app
-npm create svelte@latest my-app
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+To install Svelte.i18next, simply run:
 
 ```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+pnpm install @maximux13/svelte-i18next i18next i18next-browser-languagedetector i18next-http-backend
 ```
 
-Everything inside `src/lib` is part of your library, everything inside `src/routes` can be used as a showcase or preview app.
+## Configuration
 
-## Building
+1. Create a i18n config file at `src/i18n.ts`
 
-To build your library:
-
-```bash
-npm run package
+```ts
+export default {
+  // This is the list of languages your application supports
+  supportedLngs: ['en', 'es'],
+  // This is the language you want to use in case
+  // if the user language is not in the supportedLngs
+  fallbackLng: 'en',
+  // The default namespace of i18next is "translation", but you can customize it here
+  defaultNS: 'common'
+};
 ```
 
-To create a production version of your showcase app:
+2. Create the locales files at `static/locales/{lng}/{ns}.json`
 
-```bash
-npm run build
+```json
+// e.g: static/locales/en/common.json
+{
+  "title": "Svelte i18next - Hello {{name}}!",
+  "world": "World"
+}
 ```
 
-You can preview the production build with `npm run preview`.
+3. Create a instance of SvelteI18next at `src/i18n.server.ts`
 
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+```ts
+import Backend from 'i18next-http-backend';
 
-## Publishing
+import { SvelteI18next } from '@maximux13/svelte-i18next';
 
-Go into the `package.json` and give your package the desired name through the `"name"` option. Also consider adding a `"license"` field and point it to a `LICENSE` file which you can create from a template (one popular option is the [MIT license](https://opensource.org/license/mit/)).
+import i18n from './i18n';
 
-To publish your library to [npm](https://www.npmjs.com):
+const i18next = new SvelteI18next({
+  i18next: {
+    ...i18n,
+    backend: { loadPath: '/locales/{{lng}}/{{ns}}.json' }
+  },
+  backend: Backend
+});
 
-```bash
-npm publish
+export default i18next;
 ```
+
+4. Create a server hook to initialize i18next at `src/hook.server.ts`
+
+```ts
+import type { Handle } from '@sveltejs/kit';
+import { createInstance } from 'i18next';
+import Backend from 'i18next-http-backend';
+
+import i18n from './i18n';
+import i18next from './i18n.server';
+
+import { createFetchRequest } from '@maximux13/svelte-i18next';
+
+export const handle: Handle = async (props) => {
+  const { event, resolve } = props;
+
+  const instance = createInstance();
+  const lng = await i18next.getLocale(event);
+  const ns = await i18next.getNamespaces(event);
+  const request = createFetchRequest(event.fetch);
+
+  await instance
+    .use(Backend)
+    .init({ ...i18n, backend: { loadPath: '/locales/{{lng}}/{{ns}}.json', request }, lng, ns });
+
+  const initOptions = i18next.getInitOptions(instance);
+
+  event.locals.i18n = Object.assign(instance, { initOptions });
+
+  return resolve(event, {
+    transformPageChunk: ({ html }) => html.replace('<html lang="en">', `<html lang="${lng}">`)
+  });
+};
+```
+
+5. Create a client instance and expose that to use later on your code
+
+`src/routes/+layout.server.ts`
+
+```ts
+import type { LayoutServerLoad } from './$types';
+
+export const load: LayoutServerLoad = async ({ locals, depends }) => {
+  depends('i18n:lng');
+
+  return { i18n: locals.i18n.initOptions };
+};
+```
+
+`src/routes/+layout.svelte`
+
+```svelte
+<script lang="ts">
+  import { onMount, setContext } from 'svelte';
+  import i18next from 'i18next';
+  import Backend from 'i18next-http-backend';
+  import LanguageDetector from 'i18next-browser-languagedetector';
+
+  import { createStore } from '@maximux13/svelte-i18next';
+
+  import type { LayoutData } from './$types';
+
+  export let data: LayoutData;
+
+  const store = createStore(i18next);
+
+  i18next
+    .use(Backend)
+    .use(LanguageDetector)
+    .init({
+      ...data.i18n,
+      detection: { caches: ['cookie'], order: ['htmlTag'] }
+    });
+
+  setContext('i18n', store);
+</script>
+
+<slot />
+```
+
+## Usage
+
+Then you can use that store on your components
+
+```svelte
+<script lang="ts">
+  import type { i18nStore } from '@maximux13/svelte-i18next';
+  import { getContext } from 'svelte';
+
+  const i18n = getContext('i18n') as i18nStore;
+</script>
+
+<h1>{$i18n.t('title', { name: $i18n.t('world') })}</h1>
+```
+
+or in your svelte server code
+
+```ts
+import type { PageServerLoad } from './$types';
+
+export const load: PageServerLoad = async ({ locals, depends }) => {
+  depends('i18n:lng');
+
+  return { world: locals.i18n.t('world') };
+};
+```
+
+> Note: We use `depends('i18n:lng');` in order to invalidate the data when the language changes, this invalidation is call by the i18n store when calling `$i18n.changeLanguage` method.
+
+### Managing namespaces
+
+To manage namespaces in Svelte.I18next, you can specify which namespaces should be loaded on each page by passing a map with the route ID and the corresponding namespaces during the initialization of the SvelteI18next instance.
+
+```ts
+import Backend from 'i18next-http-backend';
+
+import { SvelteI18next } from '@maximux13/svelte-i18next';
+
+import i18n from './i18n';
+
+const i18next = new SvelteI18next({
+  i18next: {
+    ...i18n,
+    backend: { loadPath: '/locales/{{lng}}/{{ns}}.json' }
+  },
+  backend: Backend,
+  routes: {
+    '/home': ['home'],
+    '/about': ['about']
+  }
+});
+
+export default i18next;
+```
+
+> 📝 Note that this functionality may change in the future to allow the retrieval of namespaces from the layout parents of the rendered route.
+
+## getFixedT
+
+You can use i18next.getFixedT on your server code e.g: `+server.ts`
+
+```ts
+/** @type {import('./$types').RequestHandler} */
+export function GET(event) {
+  const t = i18next.getFixedT(event, { locale: 'en', namespaces: 'test', options: {} });
+
+  return new Response(t('title'));
+}
+```
+
+## Acknowledgements
+
+This library was inspired by the work of SergioDXA on the [remix-i18next](https://github.com/sergiodxa/remix-i18next) library.
+
+## Troubleshooting
+
+If you run into any issues using Svelte.i18next, please check the documentation or open an issue on GitHub.
+
+## License
+
+This project is licensed under the MIT License.
