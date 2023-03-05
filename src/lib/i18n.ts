@@ -90,20 +90,25 @@ export default class SvelteI18next {
 
   public async getFixedT<N extends Namespace>(
     event: EventLike,
-    locale: string,
-    namespaces?: N,
-    options?: InitOptions
+    options: {
+      locale?: string;
+      namespaces?: N;
+      options?: InitOptions;
+    } = {}
   ) {
-    const [instance] = await Promise.all([
+    const ns = options.namespaces ?? (this.options.i18next.defaultNS as string);
+
+    const [instance, lng] = await Promise.all([
       this.createInstance(event, {
         ...this.options.i18next,
-        ...options
-      })
+        ...options,
+        ns
+      }),
+      options.locale ?? (await this.getLocale(event))
     ]);
 
-    await instance.changeLanguage(locale);
-    await instance.loadNamespaces(namespaces ?? 'translations');
+    await instance.changeLanguage(lng);
 
-    return instance.getFixedT(locale, namespaces);
+    return instance.getFixedT(lng, options.namespaces);
   }
 }
