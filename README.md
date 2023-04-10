@@ -110,23 +110,18 @@ export const load: LayoutServerLoad = async ({ locals, depends }) => {
 };
 ```
 
-`src/routes/+layout.svelte`
+`src/routes/+layout.ts`
 
-```svelte
-<script lang="ts">
-  import { onMount, setContext } from 'svelte';
-  import i18next from 'i18next';
-  import Backend from 'i18next-http-backend';
-  import LanguageDetector from 'i18next-browser-languagedetector';
+```ts
+import type { LayoutLoad } from './$types';
 
-  import { createStore } from '@maximux13/svelte-i18next';
+import i18next from 'i18next';
+import Backend from 'i18next-http-backend';
+import LanguageDetector from 'i18next-browser-languagedetector';
 
-  import type { LayoutData } from './$types';
+import { createStore } from '@maximux13/svelte-i18next';
 
-  export let data: LayoutData;
-
-  const store = createStore(i18next);
-
+export const load: LayoutLoad = async ({ data }) => {
   i18next
     .use(Backend)
     .use(LanguageDetector)
@@ -135,10 +130,10 @@ export const load: LayoutServerLoad = async ({ locals, depends }) => {
       detection: { caches: ['cookie'], order: ['htmlTag'] }
     });
 
-  setContext('i18n', store);
-</script>
+  const store = createStore(i18next);
 
-<slot />
+  return { i18n: store };
+};
 ```
 
 ## Usage
@@ -147,10 +142,9 @@ Then you can use that store on your components
 
 ```svelte
 <script lang="ts">
-  import type { i18nStore } from '@maximux13/svelte-i18next';
-  import { getContext } from 'svelte';
+  export let data;
 
-  const i18n = getContext('i18n') as i18nStore;
+  $: ({ i18n } = data);
 </script>
 
 <h1>{$i18n.t('title', { name: $i18n.t('world') })}</h1>
