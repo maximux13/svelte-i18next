@@ -34,7 +34,7 @@
     "test:unit": "vitest",
     "lint": "prettier --plugin-search-dir . --check . && eslint .",
     "format": "prettier --plugin-search-dir . --write .",
-    "release": "npx np"
+    "release": "pnpx np"
   },
   "exports": {
     ".": {
