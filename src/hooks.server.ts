@@ -5,7 +5,7 @@ import Backend from 'i18next-http-backend';
 import i18n from './i18n';
 import i18next from './i18n.server';
 
-import { createFetchRequest } from '@maximux13/svelte-i18next';
+import { createFetchRequest } from '$lib';
 
 export const handle: Handle = async (props) => {
   const { event, resolve } = props;
