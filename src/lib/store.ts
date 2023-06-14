@@ -1,16 +1,12 @@
-import { writable, type Writable } from 'svelte/store';
+import { writable } from 'svelte/store';
 import type { i18n } from 'i18next';
 
 import { invalidate } from '$app/navigation';
 
 export type i18nStore = ReturnType<typeof createStore>;
 
-let store: Writable<i18n>;
-
 export const createStore = (instance: i18n) => {
-  if (store) return store;
-
-  store = writable(instance);
+  const store = writable(instance);
   let currentLanguage = instance.language;
 
   instance.on('initialized', () => {
