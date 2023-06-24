@@ -164,33 +164,21 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
 
 > Note: We use `depends('i18n:lng');` in order to invalidate the data when the language changes, this invalidation is call by the i18n store when calling `$i18n.changeLanguage` method.
 
-### Managing namespaces
+### Managing Namespaces
 
-To manage namespaces in Svelte.I18next, you can specify which namespaces should be loaded on each page by passing a map with the route ID and the corresponding namespaces during the initialization of the SvelteI18next instance.
+To manage namespaces in Svelte.I18next, you can specify which namespaces should be loaded on each page by setting the `ns` property on the page/layout config object.
 
 ```ts
-import Backend from 'i18next-http-backend';
+// src/routes/page.(server).ts
 
-import { SvelteI18next } from '@maximux13/svelte-i18next';
-
-import i18n from './i18n';
-
-const i18next = new SvelteI18next({
-  i18next: {
-    ...i18n,
-    backend: { loadPath: '/locales/{{lng}}/{{ns}}.json' }
-  },
-  backend: Backend,
-  routes: {
-    '/home': ['home'],
-    '/about': ['about']
-  }
-});
-
-export default i18next;
+export const config = {
+  ns: ['page']
+};
 ```
 
-> 📝 Note that this functionality may change in the future to allow the retrieval of namespaces from the layout parents of the rendered route.
+In this example, the `page` namespace is configured to be loaded on the corresponding page. You can customize the namespaces according to your needs, and you can also use an array to load multiple namespaces on the same page.
+
+Please note that this library also allows automatic loading of namespaces from the layout.(server).ts file of the parent routes. This provides flexibility to load additional namespaces based on the structure of your application.
 
 ## getFixedT
 

@@ -23,14 +23,11 @@ import LanguageDetector, {
  * @property {InitOptions} i18next - InitOptions
  * @property {BackendModule} - The backend module to use.
  * @property {LanguageDetectorOptions} detector - This is the language detector config.
- * @property routes - This is a map of routes to namespaces. This is used to determine which namespace
- * to use for a given route.
  */
 export type SvelteI18nextOptions = {
   i18next: InitOptions;
   backend?: NewableModule<BackendModule<unknown>>;
   detector?: LanguageDetectorOptions;
-  routes?: Record<string, Namespace>;
 };
 
 /**
@@ -86,7 +83,7 @@ export default class SvelteI18next {
       resources,
       lng: instance.language,
       ns: instance.options.ns,
-      fallbackLng: instance.language
+      fallbackLng: instance.store.options.fallbackLng
     };
   }
 
@@ -107,18 +104,40 @@ export default class SvelteI18next {
    * @param {EventLike} event - EventLike - This is the event that is passed to the handler.
    * @returns An array of namespaces.
    */
-  public getNamespaces(event: EventLike) {
-    const defaultNS = this.options.i18next?.defaultNS || 'translation';
+  public async getNamespaces(event: EventLike): Promise<Namespace> {
+    if (!event.route.id) return [];
 
-    if (!event.route.id) return defaultNS as Namespace;
+    const ns = this.options.i18next.ns;
+    const namespaces = Array.isArray(ns) ? ns : [ns];
 
-    let ns;
+    const route = event.route.id;
+    const paths = route.split('/');
+    const cwd = process.cwd();
 
-    if ((ns = this.options.routes?.[event.route.id])) {
-      return [...new Set([defaultNS].concat(ns))] as Namespace;
+    async function addNamespace(path: string) {
+      try {
+        const { config } = await import(path /* @vite-ignore */);
+
+        if (config?.ns) {
+          if (typeof config.ns === 'string') namespaces.push(config.ns);
+          else namespaces.push(...config.ns);
+        }
+      } catch {
+        // ignore
+      }
     }
 
-    return defaultNS as Namespace;
+    await addNamespace(`${cwd}/src/routes${route}/+page`);
+    await addNamespace(`${cwd}/src/routes${route}/+page.server`);
+
+    while (paths.length > 0) {
+      const route = paths.join('/');
+      await addNamespace(`${cwd}/src/routes${route}/+layout`);
+      await addNamespace(`${cwd}/src/routes${route}/+layout.server`);
+      paths.pop();
+    }
+
+    return [...new Set(namespaces)].filter(Boolean);
   }
 
   /**
