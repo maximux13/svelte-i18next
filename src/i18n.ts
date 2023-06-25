@@ -1,3 +1,5 @@
+import type { InitOptions } from 'i18next';
+
 export default {
   // This is the list of languages your application supports
   supportedLngs: ['en', 'es'],
@@ -8,4 +10,4 @@ export default {
   defaultNS: 'common',
   // This is the list of namespaces your application supports
   ns: ['common', 'errors']
-};
+} as InitOptions;

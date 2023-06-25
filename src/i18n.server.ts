@@ -1,4 +1,4 @@
-import Backend from 'i18next-http-backend';
+import Backend from 'i18next-fs-backend';
 
 import { SvelteI18next } from '$lib';
 

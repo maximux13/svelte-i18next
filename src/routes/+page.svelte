@@ -1,7 +1,7 @@
 <script lang="ts">
   export let data;
 
-  $:({ i18n, world } = data)
+  $: ({ i18n, world } = data);
 </script>
 
 <svelte:head>

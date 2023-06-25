@@ -9,8 +9,6 @@ import {
 
 import type { Cookies } from '@sveltejs/kit';
 
-import createFetchRequest from './request';
-
 import LanguageDetector, {
   type LanguageDetectorOptions,
   type Params,
@@ -50,20 +48,17 @@ export default class SvelteI18next {
     });
   }
 
-  private async createInstance(event: EventLike, options: InitOptions) {
+  private async createInstance(options: InitOptions) {
     let instance = createInstance();
 
     const initOptions = { ...this.options.i18next, ...options };
 
     if (this.options.backend) instance = instance.use(this.options.backend);
 
-    const request = createFetchRequest(event.fetch);
-
     await instance.init({
       ...initOptions,
       backend: {
-        ...initOptions.backend,
-        request
+        ...initOptions.backend
       }
     });
 
@@ -163,11 +158,12 @@ export default class SvelteI18next {
     const ns = options.namespaces ?? (this.options.i18next.defaultNS as string);
 
     const [instance, lng] = await Promise.all([
-      this.createInstance(event, {
+      this.createInstance({
         ...this.options.i18next,
         ...options,
         ns
       }),
+
       options.locale ?? (await this.getLocale(event))
     ]);
 
