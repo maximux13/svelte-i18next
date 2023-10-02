@@ -16,6 +16,16 @@ import LanguageDetector, {
 } from './detector';
 
 /**
+ * Joins multiple path segments into a single path string. The resulting path is normalized by removing any trailing slashes and ensuring that there is exactly one leading slash.
+ *
+ * @param paths - The path segments to join.
+ * @returns The joined path string.
+ */
+function join(...paths: string[]) {
+  return paths.map((path) => path.replace(/(\/)*$/, '').replace(/^(\/)*/, '/')).join('');
+}
+
+/**
  * `SvelteI18nextOptions`
  *
  * @property {InitOptions} i18next - InitOptions
@@ -103,10 +113,9 @@ export default class SvelteI18next {
     if (!event.route.id) return [];
 
     const ns = this.options.i18next.ns;
-    const namespaces = Array.isArray(ns) ? ns : [ns];
-
+    const namespaces = Array.isArray(ns) ? [...ns] : [ns];
     const route = event.route.id;
-    const paths = route.split('/');
+    const paths = route.slice(1).split('/').filter(Boolean);
     const cwd = process.cwd();
 
     async function addNamespace(path: string) {
@@ -122,13 +131,13 @@ export default class SvelteI18next {
       }
     }
 
-    await addNamespace(`${cwd}/src/routes${route}/+page`);
-    await addNamespace(`${cwd}/src/routes${route}/+page.server`);
+    await addNamespace(join(cwd, '/src/routes/', `${route}`, '/+page'));
+    await addNamespace(join(cwd, '/src/routes/', `${route}`, '/+page.server'));
 
     while (paths.length > 0) {
       const route = paths.join('/');
-      await addNamespace(`${cwd}/src/routes${route}/+layout`);
-      await addNamespace(`${cwd}/src/routes${route}/+layout.server`);
+      await addNamespace(join(cwd, '/src/routes/', `${route}`, '/+layout'));
+      await addNamespace(join(cwd, '/src/routes/', `${route}`, '/+layout.server'));
       paths.pop();
     }
 

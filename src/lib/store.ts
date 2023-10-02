@@ -21,7 +21,8 @@ export const createStore = (instance: i18n) => {
   });
 
   instance.on('languageChanged', () => {
-    invalidate('i18n:lng');
+    if (typeof document !== 'undefined' && document.documentElement) invalidate('i18n:lng');
+    else store.set(instance);
   });
 
   return store;
