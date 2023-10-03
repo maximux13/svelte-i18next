@@ -1,8 +1,26 @@
+Tu archivo README ya es bastante detallado, lo cual es excelente. Sin embargo, hay algunas áreas donde podríamos mejorar la claridad y la organización. Aquí hay una versión revisada:
+
+---
+
 # Svelte.i18next
 
-![](https://img.shields.io/github/license/maximux13/svelte-i18next)
-![](https://img.shields.io/npm/dm/@maximux13/svelte-i18next)
-![](https://img.shields.io/npm/v/@maximux13/svelte-i18next)
+![License](https://img.shields.io/github/license/maximux13/svelte-i18next)
+![Downloads](https://img.shields.io/npm/dm/@maximux13/svelte-i18next)
+![Version](https://img.shields.io/npm/v/@maximux13/svelte-i18next)
+
+## Table of Contents
+
+- [Introduction](#introduction)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [Advanced Features](#advanced-features)
+  - [Managing Namespaces](#managing-namespaces)
+  - [getFixedT](#getfixedt)
+  - [Trans Component](#trans-component)
+- [Acknowledgements](#acknowledgements)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
 
 ## Introduction
 
@@ -18,37 +36,47 @@ pnpm install @maximux13/svelte-i18next i18next i18next-browser-languagedetector 
 
 ## Configuration
 
-1. Create a i18n config file at `src/i18n.ts`
+To set up Svelte.i18next in your project, you'll need to go through the following configuration steps:
+
+### i18n Config File
+
+Step 1: Create an i18n Configuration File
+
+Create a file named src/i18n.ts and populate it with the i18n configuration. Here is an example:
 
 ```ts
 export default {
-  // This is the list of languages your application supports
-  supportedLngs: ['en', 'es'],
-  // This is the language you want to use in case
-  // if the user language is not in the supportedLngs
-  fallbackLng: 'en',
-  // The default namespace of i18next is "translation", but you can customize it here
-  defaultNS: 'common'
+  supportedLngs: ['en', 'es'], // Supported languages
+  fallbackLng: 'en', // Fallback language
+  defaultNS: 'common' // Default namespace
 };
 ```
 
-2. Create the locales files at `static/locales/{lng}/{ns}.json`
+### Locale Files
+
+Step 2: Create Locale Files
+
+Create locale JSON files inside the static/locales/{lng}/{ns}.json directory. Replace {lng} with the language code (e.g., en, es) and {ns} with the namespace (e.g., common).
+
+Example content for `static/locales/en/common.json`:
 
 ```json
-// e.g: static/locales/en/common.json
 {
   "title": "Svelte i18next - Hello {{name}}!",
   "world": "World"
 }
 ```
 
-3. Create a instance of SvelteI18next at `src/i18n.server.ts`
+### Server Initialization
+
+Step 3: Initialize SvelteI18next Instance
+
+In your src/i18n.server.ts, initialize a new SvelteI18next instance as shown below:
 
 ```ts
+// src/i18n.server.ts
 import Backend from 'i18next-http-backend';
-
 import { SvelteI18next } from '@maximux13/svelte-i18next';
-
 import i18n from './i18n';
 
 const i18next = new SvelteI18next({
@@ -62,7 +90,11 @@ const i18next = new SvelteI18next({
 export default i18next;
 ```
 
-4. Create a server hook to initialize i18next at `src/hook.server.ts`
+### Add Server Hook
+
+Step 4: Add Server Hook
+
+Create a server hook to initialize i18next in src/hook.server.ts:
 
 ```ts
 import type { Handle } from '@sveltejs/kit';
@@ -96,7 +128,11 @@ export const handle: Handle = async (props) => {
 };
 ```
 
-5. Create a client instance and expose that to use later on your code
+### Client Initialization
+
+Step 5: Client Instance Setup
+
+Finally, set up a client instance to expose i18next functionalities in your code. For example, in src/routes/+layout.server.ts and src/routes/+layout.ts:
 
 `src/routes/+layout.server.ts`
 
@@ -138,7 +174,11 @@ export const load: LayoutLoad = async ({ data }) => {
 
 ## Usage
 
-Then you can use that store on your components
+Once you've completed the [Configuration](#configuration) steps, you can start using Svelte.i18next in your Svelte components and server-side code.
+
+### In Svelte Components
+
+You can use the i18n store in your Svelte components to access translations. Here's an example:
 
 ```svelte
 <script lang="ts">
@@ -150,9 +190,12 @@ Then you can use that store on your components
 <h1>{$i18n.t('title', { name: $i18n.t('world') })}</h1>
 ```
 
-or in your svelte server code
+### In Svelte Server Code
+
+You can also use i18n functionalities in your server-side code. For instance:
 
 ```ts
+// Example in a server-side Svelte file
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, depends }) => {
@@ -162,45 +205,188 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
 };
 ```
 
-> Note: We use `depends('i18n:lng');` in order to invalidate the data when the language changes, this invalidation is call by the i18n store when calling `$i18n.changeLanguage` method.
+**Note**: We use `depends('i18n:lng');` to invalidate the data when the language changes. This invalidation is triggered by the i18n store when calling `$i18n.changeLanguage` method.
+
+## Advanced Features
 
 ### Managing Namespaces
 
-To manage namespaces in Svelte.I18next, you can specify which namespaces should be loaded on each page by setting the `ns` property on the page/layout config object.
+To manage namespaces, specify which namespaces should be loaded on each page by setting the `ns` property in your page or layout configuration. For example:
 
 ```ts
 // src/routes/page.(server).ts
-
 export const config = {
   ns: ['page']
 };
 ```
 
-In this example, the `page` namespace is configured to be loaded on the corresponding page. You can customize the namespaces according to your needs, and you can also use an array to load multiple namespaces on the same page.
-
-Please note that this library also allows automatic loading of namespaces from the layout.(server).ts file of the parent routes. This provides flexibility to load additional namespaces based on the structure of your application.
-
-## getFixedT
-
-You can use i18next.getFixedT on your server code e.g: `+server.ts`
+This will load the `page` namespace for the corresponding page. You can also use an array to load multiple namespaces:
 
 ```ts
-/** @type {import('./$types').RequestHandler} */
+export const config = {
+  ns: ['page', 'otherNamespace']
+};
+```
+
+### getFixedT
+
+The `getFixedT` function allows you to use a fixed translation function in your server-side code. Example:
+
+```ts
+// Inside a server-side Svelte file
 export function GET(event) {
   const t = i18next.getFixedT(event, { locale: 'en', namespaces: 'test', options: {} });
-
   return new Response(t('title'));
 }
 ```
 
+### Trans Component
+
+The `Trans` component provides a convenient way to include complex translations with HTML tags and Svelte components.
+
+**Props**
+
+| Prop         | Type         | Description                                               |
+| ------------ | ------------ | --------------------------------------------------------- |
+| i18n         | i18n         | i18n store instance (required if not wrapped in provider) |
+| t            | i18n.t       | Custom translation function                               |
+| tOptions     | object       | Options to pass to the translation function               |
+| key          | string       | Translation key                                           |
+| values       | object       | Values for interpolation                                  |
+| count        | number       | Count for pluralization                                   |
+| context      | string       | Context for pluralization                                 |
+| ns           | string       | Namespace                                                 |
+| defaultValue | string       | Default value                                             |
+| components   | array/object | Components to be used for interpolation                   |
+
+For detailed usage of the `Trans` component, please refer to [this section](#trans-component-usage).
+
+### Trans Component Usage
+
+The `Trans` component is designed to handle more complex translations that may include HTML tags, variables, and even Svelte components. Below are some examples and use-cases where you might find the `Trans` component useful.
+
+#### Basic Usage
+
+At its simplest, the `Trans` component can be used to translate static text.
+
+```svelte
+<Trans key="hello_world" />
+```
+
+#### With Variables
+
+You can also pass variables for interpolation.
+
+```svelte
+<Trans key="greeting" values={{ name: 'John' }} />
+```
+
+#### With HTML Tags
+
+HTML tags can be included in the translation string and mapped to actual HTML tags using the `components` prop.
+
+**Example translation string**: `Click <link>here</link>`
+
+```svelte
+<Trans key="click_here" components={{ link: 'a' }} />
+```
+
+#### Different Ways to Declare Components
+
+##### As a String
+
+You can declare the component as a string, representing the HTML tag name.
+
+```svelte
+<Trans key="click_here" components={{ link: 'a' }} />
+```
+
+##### As an Object
+
+You can also declare the component as an object, providing more options including props.
+
+```svelte
+<Trans
+  key="click_here"
+  components={{
+    link: { component: 'a', props: { href: '/page' } }
+  }}
+/>
+```
+
+##### As a Svelte Component
+
+You can use a Svelte component directly and pass props to it.
+
+```svelte
+<Trans
+  key="click_here"
+  components={{
+    link: { component: CustomLink, props: { href: '/page' } }
+  }}
+/>
+```
+
+#### `components` as an Array or Object
+
+The `components` prop can either be an array or an object, depending on your needs.
+
+##### As an Array
+
+When declared as an array, the components will replace the tags in the order they appear in the translation string.
+
+**Translation string**: `Hello <0>World</0> and <1>universe</1>`
+
+```svelte
+<Trans key="key" components={['strong', 'i']} />
+```
+
+##### As an Object
+
+When declared as an object, you can use meaningful keys to represent your tags, making your code more readable.
+
+**Translation string**: `Hello <bold>World</bold> and <italic>universe</italic>`
+
+```svelte
+<Trans key="key" components={{ bold: 'strong', italic: 'i' }} />
+```
+
+#### Passing Props to Components
+
+You can pass additional props to the components by using the object notation.
+
+```svelte
+<Trans
+  key="click_here"
+  components={{
+    bold: { component: 'strong', props: { class: 'font-semibold' } },
+    link: { component: CustomLink, props: { href: '#/' } }
+  }}
+/>
+```
+
+#### Advanced Props
+
+The `Trans` component also accepts a number of advanced props like `count`, `context`, `defaultValue`, and so on.
+
+```svelte
+<Trans key="itemCount" count={5} />
+```
+
+This could translate to "5 items" depending on your translation string and pluralization rules.
+
 ## Acknowledgements
 
-This library was inspired by the work of SergioDXA on the [remix-i18next](https://github.com/sergiodxa/remix-i18next) library.
+This library was inspired by the excellent work of SergioDXA on the [remix-i18next](https://github.com/sergiodxa/remix-i18next) library. Special thanks to all contributors and users for their support and feedback.
 
 ## Troubleshooting
 
-If you run into any issues using Svelte.i18next, please check the documentation or open an issue on GitHub.
+If you encounter any issues while using Svelte.i18next, please refer to the following resources for guidance:
+
+- **Documentation**: Make sure to read the documentation carefully for any configuration or usage details you might have missed.
+- **GitHub Issues**: Feel free to open an issue on our [GitHub repository](https://github.com/maximux13/svelte-i18next/issues) if you encounter bugs or have feature requests.
+- **Community Support**: For general questions and discussions, you can join the [Svelte community](https://svelte.dev/chat) or other relevant forums.
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License. For more details, see the [LICENSE](LICENSE) file in the repository.
