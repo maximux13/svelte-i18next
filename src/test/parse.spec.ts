@@ -1,6 +1,6 @@
 import { test } from 'vitest';
 
-import parse from './parse';
+import parse from '$lib/utils/parse';
 
 import type { ComponentType } from 'svelte';
 import type { ComponentMap } from '$lib/types';
