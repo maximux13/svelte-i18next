@@ -66,7 +66,7 @@
     context,
     defaultValue,
     ns: (typeof namespace === 'string' ? [namespace] : namespace) as Namespace
-  };
+  } as TOptions;
 
   $: content = i18nT(key, options);
 

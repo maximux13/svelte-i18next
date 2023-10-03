@@ -2,6 +2,7 @@ import { writable } from 'svelte/store';
 import type { i18n } from 'i18next';
 
 import { invalidate } from '$app/navigation';
+import { browser } from '$app/environment';
 
 export type i18nStore = ReturnType<typeof createStore>;
 
@@ -21,7 +22,7 @@ export const createStore = (instance: i18n) => {
   });
 
   instance.on('languageChanged', () => {
-    if (typeof document !== 'undefined' && document.documentElement) invalidate('i18n:lng');
+    if (browser) invalidate('i18n:lng');
     else store.set(instance);
   });
 
