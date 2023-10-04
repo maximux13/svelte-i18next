@@ -1,7 +1,3 @@
-Tu archivo README ya es bastante detallado, lo cual es excelente. Sin embargo, hay algunas áreas donde podríamos mejorar la claridad y la organización. Aquí hay una versión revisada:
-
----
-
 # Svelte.i18next
 
 ![License](https://img.shields.io/github/license/maximux13/svelte-i18next)
