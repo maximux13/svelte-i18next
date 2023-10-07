@@ -6,6 +6,9 @@
     "type": "git",
     "url": "git+https://github.com/maximux13/svelte-i18next.git"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "keywords": [
     "svelte",
     "i18n",
