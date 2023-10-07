@@ -4,7 +4,7 @@ import LanguageDetector from '$lib/detector';
 
 import { createEvent } from './createEvent';
 
-describe.only('detector', () => {
+describe('detector', () => {
   test('should exits', () => {
     expect(LanguageDetector).toBeDefined();
   });
@@ -54,7 +54,7 @@ describe.only('detector', () => {
     expect(result).toBe('es');
   });
 
-  test.only('should detect language based on order', async () => {
+  test('should detect language based on order', async () => {
     const event = createEvent({
       url: 'http://localhost:3000',
       routeId: 'index',
