@@ -15,15 +15,7 @@ import LanguageDetector, {
   type EventLike
 } from './detector';
 
-/**
- * Joins multiple path segments into a single path string. The resulting path is normalized by removing any trailing slashes and ensuring that there is exactly one leading slash.
- *
- * @param paths - The path segments to join.
- * @returns The joined path string.
- */
-function join(...paths: string[]) {
-  return paths.map((path) => path.replace(/(\/)*$/, '').replace(/^(\/)*/, '/')).join('');
-}
+import { join } from '$lib/utils/misc';
 
 /**
  * `SvelteI18nextOptions`
@@ -75,6 +67,16 @@ export default class SvelteI18next {
     return instance;
   }
 
+  protected async resolveRoute(path: string) {
+    try {
+      const { config } = await import(path /* @vite-ignore */);
+
+      return { config };
+    } catch {
+      return {};
+    }
+  }
+
   /**
    * It returns the options that will be passed to the i18next client instance
    * @param {i18n} instance - i18n - the instance of the i18n class
@@ -112,23 +114,20 @@ export default class SvelteI18next {
   public async getNamespaces(event: EventLike): Promise<Namespace> {
     if (!event.route.id) return [];
 
-    const ns = this.options.i18next.ns;
+    const ns = this.options.i18next.ns ?? this.options.i18next.defaultNS;
     const namespaces = Array.isArray(ns) ? [...ns] : [ns];
     const route = event.route.id;
-    const paths = route.slice(1).split('/').filter(Boolean);
+    const paths = ['', ...route.slice(1).split('/').filter(Boolean)];
     const cwd = process.cwd();
+    const self = this;
 
     async function addNamespace(path: string) {
-      try {
-        const { config } = await import(path /* @vite-ignore */);
+      const file = await self.resolveRoute(path);
+      if (!file?.config?.ns) return;
 
-        if (config?.ns) {
-          if (typeof config.ns === 'string') namespaces.push(config.ns);
-          else namespaces.push(...config.ns);
-        }
-      } catch {
-        // ignore
-      }
+      const config = file.config;
+      if (typeof config.ns === 'string') namespaces.push(config.ns);
+      else namespaces.push(...config.ns);
     }
 
     await addNamespace(join(cwd, '/src/routes/', `${route}`, '/+page'));
@@ -169,7 +168,7 @@ export default class SvelteI18next {
     const [instance, lng] = await Promise.all([
       this.createInstance({
         ...this.options.i18next,
-        ...options,
+        ...options.options,
         ns
       }),
 
