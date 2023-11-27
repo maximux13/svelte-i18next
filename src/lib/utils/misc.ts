@@ -6,8 +6,6 @@ export function error(message: string) {
   throw new Error('svelte-i18next:: ' + message);
 }
 
-const separator = process.platform === 'win32' ? '\\' : '/';
-
 /**
  * Joins multiple path segments into a single path string. The resulting path is normalized by removing any trailing slashes and ensuring that there is exactly one leading slash.
  *
