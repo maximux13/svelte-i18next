@@ -1,4 +1,4 @@
-import Backend from 'i18next-http-backend';
+import Backend from 'i18next-fs-backend';
 
 import { SvelteI18next } from '$lib';
 
@@ -9,10 +9,7 @@ const i18next = new SvelteI18next({
     ...i18n,
     backend: { loadPath: '/locales/{{lng}}/{{ns}}.json' }
   },
-  backend: Backend,
-  routes: {
-    '/[[lng]]': 'test'
-  }
+  backend: Backend
 });
 
 export default i18next;

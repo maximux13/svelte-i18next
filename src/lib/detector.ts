@@ -51,7 +51,12 @@ export default class LanguageDetector {
       if (locale) return locale;
     }
 
-    return this.options.fallbackLng as string;
+    return (
+      (this.options.fallbackLng as string) ||
+      (this.options.supportedLngs && Array.isArray(this.options.supportedLngs)
+        ? this.options.supportedLngs[0]
+        : this.options.supportedLngs)
+    );
   }
 
   private fromParams(params: Params) {

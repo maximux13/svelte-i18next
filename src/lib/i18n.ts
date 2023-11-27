@@ -9,13 +9,13 @@ import {
 
 import type { Cookies } from '@sveltejs/kit';
 
-import createFetchRequest from './request';
-
 import LanguageDetector, {
   type LanguageDetectorOptions,
   type Params,
   type EventLike
 } from './detector';
+
+import { join } from '$lib/utils/misc';
 
 /**
  * `SvelteI18nextOptions`
@@ -23,14 +23,11 @@ import LanguageDetector, {
  * @property {InitOptions} i18next - InitOptions
  * @property {BackendModule} - The backend module to use.
  * @property {LanguageDetectorOptions} detector - This is the language detector config.
- * @property routes - This is a map of routes to namespaces. This is used to determine which namespace
- * to use for a given route.
  */
 export type SvelteI18nextOptions = {
   i18next: InitOptions;
   backend?: NewableModule<BackendModule<unknown>>;
   detector?: LanguageDetectorOptions;
-  routes?: Record<string, Namespace>;
 };
 
 /**
@@ -53,24 +50,31 @@ export default class SvelteI18next {
     });
   }
 
-  private async createInstance(event: EventLike, options: InitOptions) {
+  private async createInstance(options: InitOptions) {
     let instance = createInstance();
 
     const initOptions = { ...this.options.i18next, ...options };
 
     if (this.options.backend) instance = instance.use(this.options.backend);
 
-    const request = createFetchRequest(event.fetch);
-
     await instance.init({
       ...initOptions,
       backend: {
-        ...initOptions.backend,
-        request
+        ...initOptions.backend
       }
     });
 
     return instance;
+  }
+
+  protected async resolveRoute(path: string) {
+    try {
+      const { config } = await import(path /* @vite-ignore */);
+
+      return { config };
+    } catch {
+      return {};
+    }
   }
 
   /**
@@ -86,7 +90,7 @@ export default class SvelteI18next {
       resources,
       lng: instance.language,
       ns: instance.options.ns,
-      fallbackLng: instance.language
+      fallbackLng: instance.store.options.fallbackLng
     };
   }
 
@@ -107,18 +111,36 @@ export default class SvelteI18next {
    * @param {EventLike} event - EventLike - This is the event that is passed to the handler.
    * @returns An array of namespaces.
    */
-  public getNamespaces(event: EventLike) {
-    const defaultNS = this.options.i18next?.defaultNS || 'translation';
+  public async getNamespaces(event: EventLike): Promise<Namespace> {
+    if (!event.route.id) return [];
 
-    if (!event.route.id) return defaultNS as Namespace;
+    const ns = this.options.i18next.ns ?? this.options.i18next.defaultNS;
+    const namespaces = Array.isArray(ns) ? [...ns] : [ns];
+    const route = event.route.id;
+    const paths = ['', ...route.slice(1).split('/').filter(Boolean)];
+    const cwd = process.cwd();
+    const self = this;
 
-    let ns;
+    async function addNamespace(path: string) {
+      const file = await self.resolveRoute(path);
+      if (!file?.config?.ns) return;
 
-    if ((ns = this.options.routes?.[event.route.id])) {
-      return [...new Set([defaultNS].concat(ns))] as Namespace;
+      const config = file.config;
+      if (typeof config.ns === 'string') namespaces.push(config.ns);
+      else namespaces.push(...config.ns);
     }
 
-    return defaultNS as Namespace;
+    await addNamespace(join(cwd, '/src/routes/', `${route}`, '/+page'));
+    await addNamespace(join(cwd, '/src/routes/', `${route}`, '/+page.server'));
+
+    while (paths.length > 0) {
+      const route = paths.join('/');
+      await addNamespace(join(cwd, '/src/routes/', `${route}`, '/+layout'));
+      await addNamespace(join(cwd, '/src/routes/', `${route}`, '/+layout.server'));
+      paths.pop();
+    }
+
+    return [...new Set(namespaces)].filter(Boolean);
   }
 
   /**
@@ -144,11 +166,12 @@ export default class SvelteI18next {
     const ns = options.namespaces ?? (this.options.i18next.defaultNS as string);
 
     const [instance, lng] = await Promise.all([
-      this.createInstance(event, {
+      this.createInstance({
         ...this.options.i18next,
-        ...options,
+        ...options.options,
         ns
       }),
+
       options.locale ?? (await this.getLocale(event))
     ]);
 

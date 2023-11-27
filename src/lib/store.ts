@@ -2,12 +2,12 @@ import { writable } from 'svelte/store';
 import type { i18n } from 'i18next';
 
 import { invalidate } from '$app/navigation';
+import { browser } from '$app/environment';
 
 export type i18nStore = ReturnType<typeof createStore>;
 
 export const createStore = (instance: i18n) => {
   const store = writable(instance);
-  let currentLanguage = instance.language;
 
   instance.on('initialized', () => {
     store.set(instance);
@@ -21,18 +21,9 @@ export const createStore = (instance: i18n) => {
     store.set(instance);
   });
 
-  instance.on('languageChanged', (lng) => {
-    if (lng === currentLanguage) return;
-    currentLanguage = lng;
-
-    instance.reloadResources([lng]).then(() => {
-      if (typeof document !== 'undefined') {
-        invalidate('i18n:lng');
-        document.documentElement.lang = lng;
-      }
-
-      store.set(instance);
-    });
+  instance.on('languageChanged', () => {
+    if (browser) invalidate('i18n:lng');
+    else store.set(instance);
   });
 
   return store;

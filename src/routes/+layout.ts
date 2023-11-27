@@ -1,12 +1,14 @@
 import type { LayoutLoad } from './$types';
 
-import i18next from 'i18next';
+import { createInstance } from 'i18next';
 import Backend from 'i18next-http-backend';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
 import { createStore } from '$lib';
 
 export const load: LayoutLoad = async ({ data }) => {
+  const i18next = createInstance();
+
   i18next
     .use(Backend)
     .use(LanguageDetector)
